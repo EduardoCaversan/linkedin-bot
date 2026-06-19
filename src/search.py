@@ -1,69 +1,64 @@
 from playwright.sync_api import Page, TimeoutError
 import random
 import time
-
+import urllib.parse
 
 def random_wait(min_sec=1, max_sec=3):
     time.sleep(random.uniform(min_sec, max_sec))
 
-
-def find_input(page: Page, selectors: list[str], field_name: str):
-    for selector in selectors:
-        try:
-            input_field = page.locator(selector)
-            input_field.wait_for(state="visible", timeout=5000)
-            return input_field
-        except TimeoutError:
-            continue
-    print(f"[ERROR] Campo '{field_name}' não encontrado com nenhum seletor conhecido.")
-    return None
-
-
 def search_jobs(page: Page, keywords="developer remote", location="Brazil"):
     print(f"[INFO] Iniciando busca: '{keywords}' em '{location}'")
 
-    search_selectors = [
-        "input[aria-label='Pesquisar vagas']",
-        "input[aria-label='Pesquisar cargo, competência ou empresa']",
-        "input[placeholder*='Pesquisar vagas']",  # fallback por placeholder
-        "input[placeholder*='Pesquisar cargo']",   # fallback alternativo
-    ]
+    encoded_keywords = urllib.parse.quote(keywords)
+    encoded_location = urllib.parse.quote(location)
+    primary_url = f"https://www.linkedin.com/jobs/search/?keywords={encoded_keywords}&location={encoded_location}&f_AL=true"
+    fallback_url = f"https://www.linkedin.com/search/results/all/?keywords={encoded_keywords}&origin=GLOBAL_SEARCH_HEADER&f_AL=true"
 
-    location_selectors = [
-        "input[aria-label='Pesquisar local']",
-        "input[placeholder*='Adicionar local']",  # fallback se o LinkedIn mudar o label
-    ]
+    try:
+        print("[INFO] Tentando URL primária de vagas...")
+        page.goto(primary_url, wait_until="domcontentloaded", timeout=15000)
+        page.wait_for_timeout(3000)
+        
+    except TimeoutError:
+        print("[WARN] Timeout na URL primária! Acionando o fallback global...")
+        try:
+            page.goto(fallback_url, wait_until="domcontentloaded", timeout=15000)
+            page.wait_for_timeout(3000)
+            jobs_tab = page.locator("button:has-text('Vagas'), button:has-text('Jobs')").first
+            if jobs_tab.count() > 0:
+                jobs_tab.click()
+                page.wait_for_timeout(3000)
+        except TimeoutError:
+            print("[ERROR] Timeout também no fallback. Tentando seguir com o que já carregou...")
 
-    search_input = find_input(page, search_selectors, "pesquisa de vagas")
-    if not search_input:
-        return []
+    print("[INFO] Realizando scroll para carregar as vagas...")
+    try:
+        first_job = page.locator('ul.scaffold-layout__list-container li, .jobs-search-results-list li').first
+        if first_job.count() > 0:
+            first_job.click()
+        
+        for _ in range(8):
+            page.keyboard.press("PageDown")
+            random_wait(1, 2)
+    except Exception as e:
+        print(f"[WARN] Aviso ao tentar fazer scroll: {e}")
 
-    location_input = find_input(page, location_selectors, "localização")
-    if not location_input:
-        return []
+    print("[INFO] Extraindo links das vagas...")
+    job_links = page.locator('a[href*="/jobs/view/"], a.job-card-list__title').all()
+    
+    urls = set()
+    for link in job_links:
+        try:
+            href = link.get_attribute("href")
+            if href and "/jobs/view/" in href:
+                clean_url = href.split("?")[0] if "?" in href else href
+                if "linkedin.com" not in clean_url:
+                    clean_url = "https://www.linkedin.com" + clean_url
+                urls.add(clean_url)
+        except Exception:
+            continue
 
-    # Preenche campos
-    search_input.fill("")
-    random_wait(0.5, 1.5)
-    search_input.fill(keywords)
-    random_wait(0.5, 1.5)
-
-    location_input.fill("")
-    random_wait(0.5, 1.5)
-    location_input.fill(location)
-    random_wait(0.5, 1.5)
-    location_input.press("Enter")
-
-    random_wait(3, 5)
-
-    # Scroll controlado
-    for _ in range(8):
-        page.mouse.wheel(0, random.randint(600, 900))
-        random_wait(0.5, 1.2)
-
-    # Captura links das vagas (ajustado para o LinkedIn atual)
-    job_links = page.locator('a.job-card-list__title').all()
-    urls = list({link.get_attribute("href") for link in job_links if link.get_attribute("href")})
-
-    print(f"[INFO] Encontradas {len(urls)} vagas únicas para '{keywords}' em '{location}'")
-    return urls
+    urls_list = list(urls)
+    print(f"[INFO] Encontradas {len(urls_list)} vagas únicas para '{keywords}' em '{location}'")
+    
+    return urls_list

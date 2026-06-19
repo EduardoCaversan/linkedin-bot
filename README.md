@@ -1,59 +1,62 @@
-# 🚀 LinkedIn Auto Apply Bot (100% Open Source)
+# 🚀 LinkedIn Auto Apply Bot (Powered by AI)
 
-Automação para candidatar automaticamente em vagas no LinkedIn com **"Candidate-se facilmente" (Easy Apply)**.  
-Agora com busca mais profunda, preenchimento automático e múltiplos filtros específicos para perfil Fullstack / .NET / Angular.
+Automação avançada para candidatura em vagas no LinkedIn com **"Easy Apply"**. O bot agora conta com um agente de **Inteligência Artificial (via Groq/Llama 3)** que lê seu currículo e responde a perguntas dinâmicas do formulário automaticamente.
 
 ---
 
-## ✅ Funcionalidades
+## ✅ Funcionalidades de IA e Automação
 
-- Busca automática de vagas com filtros específicos para seu perfil.
-- Faz scroll na página para carregar mais resultados.
-- Candidatura automática em vagas com **"Easy Apply"**.
-- Preenchimento automático de telefone e e-mail.
-- Upload automático do seu currículo PDF.
-- Controle de limite diário de candidaturas.
-- Evita repetir candidaturas em vagas já aplicadas.
+* **Agente de IA (Cloud):** Responde perguntas de formulário (cidade, experiência, etc.) usando o Llama 3 via API.
+* **Leitura Inteligente:** Extrai dados do seu PDF automaticamente para embasar as respostas da IA.
+* **Navegação Resiliente:** Utiliza seletores baseados em atributos técnicos (`data-live-test...`) para evitar quebras em atualizações do LinkedIn.
+* **Preenchimento Completo:** Lida com dados básicos (email/telefone), upload de currículo e perguntas complexas de formulário.
+* **Segurança:** Delays randomizados e limites de candidatura para reduzir riscos.
 
 ---
 
 ## 📂 Estrutura do Projeto
 
+```text
+linkedin-bot/
+├── data/
+│   ├── applied_jobs.json    # Histórico de vagas
+│   └── *.pdf                # Coloque seu CV aqui (detectado automaticamente)
+├── src/
+│   ├── main.py              # Orquestrador
+│   ├── apply.py             # Lógica de automação (Candidatura)
+│   ├── ai_helper.py         # Integração com IA (Groq/Llama 3)
+│   ├── search.py            # Busca e navegação
+│   └── storage.py           # Controle de persistência
+├── requirements.txt         # Dependências
+└── README.md                # Documentação
+
 ```
 
-linkedin-bot/
-├── src/
-│   ├── main.py                      # Arquivo principal (com seus filtros prontos)
-│   ├── apply.py                     # Lógica da candidatura automática
-│   ├── search.py                    # Busca com scroll e delays humanos
-│   ├── storage.py                   # Controle via JSON
-├── data/
-│   ├── applied\_jobs.json            # Histórico de vagas aplicadas
-│   ├── SeuCv.pdf  # Seu CV para upload automático
-├── requirements.txt                 # Dependências Python
-├── README.md                        # Documentação do projeto
-
-````
-
 ---
 
-## 📋 Pré-requisitos
+## 🔧 Configuração e Instalação
 
-- **Python 3.11+**
-- Google Chrome ou Chromium instalado.
-
----
-
-## 🔧 Instalação
+### 1. Preparação do Ambiente
 
 ```bash
 python -m venv venv
-venv\Scripts\activate  # Windows
-source venv/bin/activate  # Linux/Mac
-python -m pip install --upgrade pip
+# Ative: venv\Scripts\activate (Windows) ou source venv/bin/activate (Linux/Mac)
 pip install -r requirements.txt
 playwright install
-````
+
+```
+
+### 2. Configuração da IA (Groq API)
+
+Para o bot responder as perguntas do formulário:
+
+1. Crie uma conta gratuita em [console.groq.com](https://console.groq.com/).
+2. Gere sua **API Key**.
+3. Abra o arquivo `src/ai_helper.py` e insira sua chave no campo `api_key`.
+
+### 3. Preparação do Currículo
+
+Coloque seu currículo em PDF dentro da pasta `/data`. O bot encontrará qualquer arquivo `.pdf` nessa pasta automaticamente.
 
 ---
 
@@ -61,70 +64,28 @@ playwright install
 
 ```bash
 python src/main.py
-```
-
-### Passos:
-
-1️⃣ O navegador será aberto no LinkedIn.
-2️⃣ Faça login manualmente na sua conta.
-3️⃣ Quando estiver na página inicial de vagas, **volte ao terminal e pressione ENTER.**
-4️⃣ O bot irá:
-
-* Buscar vagas de acordo com os filtros.
-* Navegar nas vagas e aplicar automaticamente quando possível.
-* Registrar tudo em `applied_jobs.json`.
-
----
-
-## 🎯 Filtros utilizados (personalizados para seu perfil)
-
-* backend .NET Core (Brasil)
-* fullstack .NET + Angular (Remoto)
-* frontend Angular (Remoto)
-* developer Azure cloud (Brasil)
-* software engineer remote (Remoto)
-
----
-
-## 🛑 Recomendações de Uso
-
-| Limite diário | Motivo                        |
-| ------------- | ----------------------------- |
-| 20-50         | Evitar bloqueios do LinkedIn  |
-| Horário       | 9h-18h (horário comercial)    |
-| Delays        | Randomizados, já configurados |
-
----
-
-## 📄 Controle via JSON
-
-O arquivo `data/applied_jobs.json` armazena histórico e controle diário:
-
-```json
-{
-    "jobs_applied": [],
-    "applications_today": 0,
-    "last_run_date": ""
-}
-```
-
----
-
-## 📎 Currículo
-
-Certifique-se de ter o arquivo de currículo como no modelo abaixo:
 
 ```
-/data/SeuCv.pdf
-```
 
-Ele será anexado automaticamente nas vagas que pedirem upload de currículo.
+1. **Login Manual:** O navegador abrirá. Faça login na sua conta LinkedIn.
+2. **Autorização:** Quando estiver no feed de vagas, volte ao terminal e pressione **ENTER**.
+3. **Automação:** O bot iniciará o fluxo de aplicação inteligente, preenchendo as perguntas conforme necessário.
 
 ---
 
-## ❗ Aviso Legal
+## 💡 Melhores Práticas (IA & Bloqueios)
 
-Esta automação é **educacional**. Usar bots viola os **Termos de Uso do LinkedIn** e pode resultar no bloqueio da conta.
-Use por sua conta e risco.
+* **Prompt da IA:** Em `src/ai_helper.py`, você pode ajustar o `system prompt` para refinar como a IA responde às empresas (ex: ser mais formal, destacar tecnologias específicas).
+* **Limite Diário:** Recomendamos manter entre **20-30 candidaturas por dia**. Exceder isso pode disparar alertas de segurança do LinkedIn.
+* **Tratamento de Erros:** O bot está configurado com `networkidle` e `timeout` otimizados para contornar bloqueios temporários de rede (`ERR_ABORTED`). Caso ocorra uma falha de conexão, o bot simplesmente aguardará e seguirá para a próxima vaga.
+
+---
+
+## 🛑 Aviso Legal
+
+Este projeto foi criado para fins **educacionais**. O uso de bots para automação de candidaturas viola os [Termos de Serviço do LinkedIn](https://www.linkedin.com/legal/user-agreement).
+
+* **Risco de conta:** O uso excessivo ou mal configurado pode resultar na suspensão da sua conta.
+* **Responsabilidade:** O autor não se responsabiliza pelo uso desta ferramenta. Use com moderação e por sua conta e risco.
 
 ---

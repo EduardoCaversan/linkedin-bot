@@ -25,19 +25,22 @@ def main():
         browser = p.chromium.launch(headless=False, slow_mo=100)
         page = browser.new_page()
         page.goto("https://www.linkedin.com/login")
-        print("\n⚠️ Faça login manualmente e tecle ENTER quando estiver na tela inicial de vagas.\n")
+        print("\n⚠️ Faça login manualmente e tecle ENTER quando estiver na tela inicial do feed.\n")
         input("Pressione ENTER para continuar...")
 
-        # Aguarda o redirecionamento automático para o feed após login
         try:
             page.wait_for_url("https://www.linkedin.com/feed/", timeout=15000)
             print("[INFO] Login confirmado, na página do feed.")
         except TimeoutError:
-            print("[WARN] Timeout esperando a página do feed após login.")
+            print("[WARN] Timeout esperando a página do feed após login. Seguindo mesmo assim...")
 
-        # Agora navega para a página de vagas
-        page.goto("https://www.linkedin.com/jobs/")
-        page.wait_for_load_state("networkidle", timeout=15000)
+        print("[INFO] Navegando para a página de vagas...")
+        try:
+            page.goto("https://www.linkedin.com/jobs/", wait_until="domcontentloaded", timeout=15000)
+            page.wait_for_timeout(3000)
+        except TimeoutError:
+            print("[WARN] Timeout ao carregar /jobs/. O script tentará continuar.")
+            
         print(f"[INFO] Página atual: {page.url}")
 
         try:
@@ -54,15 +57,15 @@ def main():
                         print(f"[INFO] Vaga já aplicada anteriormente: {job_url}")
                         continue
 
-                    print(f"[INFO] Acessando vaga: {job_url}")
+                    clean_job_url = job_url.split("?")[0].rstrip("/")
+                    direct_apply_url = f"{clean_job_url}/apply/?openSDUIApplyFlow=true"
+                    print(f"[INFO] Acessando vaga (Deep Link): {direct_apply_url}")
                     try:
-                        page.goto(job_url)
-                        page.wait_for_load_state("networkidle", timeout=10000)
-                        random_wait(4, 8)
-                    except TimeoutError:
-                        print("[WARN] Timeout ao carregar a vaga. Pulando...")
-                        continue
-
+                        print(f"[INFO] Acessando vaga: {direct_apply_url}")
+                        page.goto(direct_apply_url, wait_until="networkidle", timeout=30000)
+                    except Exception as e:
+                        print(f"[WARN] Erro ao carregar, esperando e tentando novamente... {e}")
+                        page.wait_for_timeout(15000) 
                     try:
                         applied = try_apply(page)
                     except Exception as e:

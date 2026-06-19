@@ -2,70 +2,93 @@ from playwright.sync_api import Page
 import random
 import time
 import os
+import re
+from ai_helper import answer_question_with_ai
 
-MOBILE_NUMBER = "+55 (00) 00000-0000"
-EMAIL = "youremail@gmail.com"
+MOBILE_NUMBER = "+55 (43) 99636-9518"
+EMAIL = "educaversan.dev@gmail.com"
 
 def random_wait(min_sec=1, max_sec=3):
     time.sleep(random.uniform(min_sec, max_sec))
 
-
-def fill_basic_form(page):
+def fill_basic_form(page: Page):
+    """Preenche e-mail e telefone."""
     try:
-        phone_input = page.locator("input[aria-label='Número de telefone']")
-        if phone_input.count() > 0 and phone_input.input_value().strip() == "":
-            phone_input.fill(MOBILE_NUMBER)
-    except:
-        pass
+        phone = page.locator("input[id*='phone'], input[name*='phone']")
+        if phone.count() > 0 and phone.first.is_visible() and phone.first.input_value() == "":
+            phone.first.fill(MOBILE_NUMBER)
+        email = page.locator("input[type='email'], input[id*='email']")
+        if email.count() > 0 and email.first.is_visible() and email.first.input_value() == "":
+            email.first.fill(EMAIL)
+    except: pass
 
-    try:
-        email_input = page.locator("input[aria-label='Endereço de email']")
-        if email_input.count() > 0 and email_input.input_value().strip() == "":
-            email_input.fill(EMAIL)
-    except:
-        pass
-
-
-def upload_cv_if_needed(page):
+def upload_cv_if_needed(page: Page):
+    """Anexa o PDF da pasta data."""
     try:
         file_input = page.locator("input[type='file']")
-        if file_input.count() > 0:
-            file_input.set_input_files(os.path.abspath("./data/Eduardo_Caversan_Dev_Fullstack.pdf"))
-            random_wait(2, 4)
-    except:
-        pass
+        if file_input.count() > 0 and file_input.first.is_visible():
+            from ai_helper import CV_PATH
+            file_input.first.set_input_files(CV_PATH)
+            random_wait(2, 3)
+    except: pass
 
-
-def is_application_too_complex(page):
-    if page.locator("button:has-text('Avançar')").count() > 0:
-        return True
-    if page.locator("input[type='file']").count() > 0:
-        return False 
-    return False
-
+def fill_dynamic_questions(page: Page):
+    """Usa a IA para responder perguntas dinâmicas do LinkedIn."""
+    form_elements = page.locator(".fb-dash-form-element, .jobs-easy-apply-form-element")
+    for i in range(form_elements.count()):
+        element = form_elements.nth(i)
+        label = element.locator("label").first
+        input_box = element.locator("input.artdeco-text-input--input, textarea")
+        
+        if label.count() > 0 and input_box.count() > 0:
+            question = label.inner_text()
+            if input_box.first.input_value().strip() == "":
+                print(f"[IA] Respondendo: {question.strip()}")
+                answer = answer_question_with_ai(question)
+                input_box.first.fill(answer)
+                random_wait(1, 2)
 
 def try_apply(page: Page):
     try:
-        easy_apply_button = page.locator("button:has-text('Candidate-se facilmente')")
-        if easy_apply_button.count() > 0:
-            easy_apply_button.first.click()
-            random_wait(2, 4)
-
+        random_wait(3, 5)
+        
+        for step in range(12):
             fill_basic_form(page)
             upload_cv_if_needed(page)
+            fill_dynamic_questions(page)
+            
+            random_wait(2, 3)
+            
+            btn_submit = page.locator("button[data-live-test-easy-apply-submit-button]")
+            btn_review = page.locator("button[data-live-test-easy-apply-review-button]")
+            btn_next = page.locator("button[data-easy-apply-next-button]")
 
-            if is_application_too_complex(page):
-                print("[INFO] Formulário complexo, pulando.")
-                close_button = page.locator("button[aria-label='Fechar']")
-                if close_button.count() > 0:
-                    close_button.first.click()
-                return False
+            
+            if btn_submit.count() > 0 and btn_submit.first.is_visible():
+                print("[INFO] Botão ENVIAR detectado. Clicando...")
+                btn_submit.first.click(force=True)
+                random_wait(4, 6)
+                if page.locator("text=Concluído").count() > 0 or page.locator("text=Done").count() > 0:
+                    print("[INFO] Vaga enviada com sucesso!")
+                    return True
+                continue
 
-            submit_button = page.locator("button:has-text('Enviar candidatura')")
-            if submit_button.count() > 0:
-                submit_button.first.click()
-                random_wait(2, 4)
-                return True
+            if btn_review.count() > 0 and btn_review.first.is_visible():
+                print("[INFO] Botão REVISAR detectado. Clicando...")
+                btn_review.first.click(force=True)
+                random_wait(2, 3)
+                continue
+
+            if btn_next.count() > 0 and btn_next.first.is_visible():
+                print("[INFO] Botão AVANÇAR detectado. Clicando...")
+                btn_next.first.click(force=True)
+                random_wait(2, 3)
+                continue
+            
+            print("[INFO] Fim da navegação ou botões não visíveis.")
+            break
+        
+        return False
     except Exception as e:
-        print(f"[WARN] Erro ao tentar aplicar: {e}")
-    return False
+        print(f"[WARN] Erro no fluxo: {e}")
+        return False
