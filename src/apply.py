@@ -5,8 +5,8 @@ import os
 import re
 from ai_helper import answer_question_with_ai
 
-MOBILE_NUMBER = "+55 (43) 99636-9518"
-EMAIL = "educaversan.dev@gmail.com"
+MOBILE_NUMBER = "+55 (00) 00000-0000"
+EMAIL = "email@gmail.com"
 
 def random_wait(min_sec=1, max_sec=3):
     time.sleep(random.uniform(min_sec, max_sec))
