@@ -1,12 +1,12 @@
 # 🚀 LinkedIn Auto Apply Bot (Powered by AI)
 
-Automação avançada para candidatura em vagas no LinkedIn com **"Easy Apply"**. O bot agora conta com um agente de **Inteligência Artificial (via Groq/Llama 3)** que lê seu currículo e responde a perguntas dinâmicas do formulário automaticamente.
+Automação avançada para candidatura em vagas no LinkedIn com **"Easy Apply"**. O bot agora conta com um agente de **Inteligência Artificial (via Groq/Qwen)** que lê seu currículo e responde a perguntas dinâmicas do formulário automaticamente.
 
 ---
 
 ## ✅ Funcionalidades de IA e Automação
 
-* **Agente de IA (Cloud):** Responde perguntas de formulário (cidade, experiência, etc.) usando o Llama 3 via API.
+* **Agente de IA (Cloud):** Responde perguntas de formulário (cidade, experiência, etc.) usando a I.A via API.
 * **Leitura Inteligente:** Extrai dados do seu PDF automaticamente para embasar as respostas da IA.
 * **Navegação Resiliente:** Utiliza seletores baseados em atributos técnicos (`data-live-test...`) para evitar quebras em atualizações do LinkedIn.
 * **Preenchimento Completo:** Lida com dados básicos (email/telefone), upload de currículo e perguntas complexas de formulário.
